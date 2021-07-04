@@ -1,0 +1,133 @@
+
+initialize() {
+	
+	initializeSLiMModelType("nonWF");
+	
+	if (exists("slimgui")){
+		defineConstant("Nr", 1);
+		defineConstant("Tadmx", 100);
+		defineConstant("p1MalePercentage", 50);
+		defineConstant("directory", "/mnt/d/trees/");
+	}
+	
+	defineConstant("Ne", 5000);
+	defineConstant("L", 101);
+	defineConstant("Tscript", 100000+Tadmx);
+	defineConstant("p1MaleRatio", p1MalePercentage/100);
+	
+	initializeTreeSeq();
+	initializeSex("A");
+	initializeMutationRate(0);
+	initializeMutationType("m1", 1.0, "f", 0.0);		// mtDNA-Marker
+	initializeMutationType("m2", 1.0, "f", 0.0);		// YChrom-Marker
+	initializeMutationType("m3", 1.0, "f", 0.0);		// p1-females-Marker
+	initializeMutationType("m4", 1.0, "f", 0.0);		// p2-females-Marker
+	initializeMutationType("m5", 1.0, "f", 0.0);		// p1-males-Marker
+	initializeMutationType("m6", 1.0, "f", 0.0);		// p2-males-Marker
+	
+	initializeGenomicElementType("g1", m1, 1.0);
+	initializeGenomicElement(g1, 0, L-1);
+	initializeRecombinationRate(0);
+	
+	m1.convertToSubstitution = F;
+	m2.convertToSubstitution = F;
+	m3.convertToSubstitution = F;
+	m4.convertToSubstitution = F;
+	m5.convertToSubstitution = F;
+	m6.convertToSubstitution = F;
+}
+
+
+reproduction() {
+	for (s in sim.subpopulations){
+		for (i in seqLen(Ne)){
+			mom = s.sampleIndividuals(1, sex = "F");
+			dad = s.sampleIndividuals(1, sex = "M");
+			s.addRecombinant(mom.genome1, NULL, NULL, dad.genome2, NULL, NULL);
+		}
+	}
+	self.active = 0;
+}
+
+early() {
+	sim.subpopulations.individuals[sim.subpopulations.individuals.age > 0].fitnessScaling = 0;
+}
+
+
+1 early(){
+	sim.rescheduleScriptBlock(s1, Tscript, Tscript);
+	sim.rescheduleScriptBlock(s2, Tscript+10, Tscript+10);
+	sim.rescheduleScriptBlock(s3, Tscript+100, Tscript+100);
+	sim.rescheduleScriptBlock(s4, Tscript+200, Tscript+200);
+	sim.rescheduleScriptBlock(s5, Tscript+300, Tscript+300);
+	sim.rescheduleScriptBlock(s6, Tscript+400, Tscript+400);
+	sim.rescheduleScriptBlock(s7, Tscript+500, Tscript+500);
+	sim.rescheduleScriptBlock(s8, Tscript, Tscript+500);
+	sim.addSubpop("p4", Ne);
+	p4.individuals[p4.individuals.sex == "F"].genome1.addNewMutation(m1, 0.0, 0);
+	p4.individuals[p4.individuals.sex == "M"].genome2.addNewMutation(m2, 0.0, L-1);
+
+}
+
+100000 late(){
+	sim.addSubpop("p1", 0);
+	sim.addSubpop("p2", 0);
+	p1.takeMigrants(p4.sampleIndividuals(asInteger(Ne/2)));
+	p2.takeMigrants(p4.sampleIndividuals(asInteger(Ne/2)));
+	p4.removeSubpopulation();
+	p1.individuals[p1.individuals.sex == "F"].genome1.addNewMutation(m3, 0.0, 2);
+	p2.individuals[p2.individuals.sex == "F"].genome1.addNewMutation(m4, 0.0, 2);
+	p1.individuals[p1.individuals.sex == "M"].genome2.addNewMutation(m5, 0.0, 2);
+	p2.individuals[p2.individuals.sex == "M"].genome2.addNewMutation(m6, 0.0, 2);
+}
+
+s1 109000 late(){
+	sim.addSubpop("p3", 0);
+	p3.takeMigrants(p1.sampleIndividuals(asInteger(Ne/8), sex = "F"));
+	p3.takeMigrants(p2.sampleIndividuals(asInteger(Ne/8), sex = "F"));
+	p3.takeMigrants(p1.sampleIndividuals(asInteger((Ne/4)*p1MaleRatio), sex = "M"));
+	p3.takeMigrants(p2.sampleIndividuals(asInteger((Ne/4)*(1-p1MaleRatio)), sex = "M"));
+	catn("runNr	generation	p1MaleRatio	p2Maleratio	p1FemaleRatio	p2FemaleRatio");
+	writeFile(directory+"Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+".txt","runNr	generation	p1MaleRatio	p2Maleratio	p1FemaleRatio	p2FemaleRatio", append=T);
+}
+
+s2 110001 late(){
+	filename = asString("Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+"_T_10.trees");
+	sim.treeSeqOutput(directory+filename);
+}
+
+s3 110002 late(){
+	filename = asString("Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+"_T_100.trees");
+	sim.treeSeqOutput(directory+filename);
+}
+
+s4 110003 late(){
+	filename = asString("Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+"_T_200.trees");
+	sim.treeSeqOutput(directory+filename);
+}
+
+s5 110004 late(){
+	filename = asString("Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+"_T_300.trees");
+	sim.treeSeqOutput(directory+filename);
+}
+
+s6 110005 late(){
+	filename = asString("Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+"_T_400.trees");
+	sim.treeSeqOutput(directory+filename);
+}
+
+s7 110006 late(){
+	filename = asString("Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+"_T_500.trees");
+	sim.treeSeqOutput(directory+filename);
+	sim.simulationFinished();
+}
+
+s8 110000 late() {
+	males = p3.individuals[p3.individuals.sex == "M"];
+	females = p3.individuals[p3.individuals.sex == "F"];
+	maleratio = sum(males.genome2.containsMarkerMutation(m5, 2))/(sum(males.genome2.containsMarkerMutation(m5, 2))+sum(males.genome2.containsMarkerMutation(m6, 2)));
+	femaleratio = sum(females.genome1.containsMarkerMutation(m3, 2))/(sum(females.genome1.containsMarkerMutation(m3, 2))+sum(females.genome1.containsMarkerMutation(m4, 2)));
+	
+	writeFile(directory+"Nr_"+Nr+"_Tdiff_"+Tadmx+"_SB_"+p1MalePercentage+".txt","\n"+Nr+"	"+sim.generation+"	"+maleratio+"	"+(1-maleratio)+"	"+femaleratio+"	"+(1-femaleratio), append=T);
+	catn(Nr+"	"+sim.generation+"	"+maleratio+"	"+(1-maleratio)+"	"+femaleratio+"	"+(1-femaleratio));
+}
